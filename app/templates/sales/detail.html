@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}{{ sale.invoice_number }}{% endblock %}
+{% block page_title %}Sale Detail{% endblock %}
+{% block content %}
+<div style="max-width:800px">
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ sale.invoice_number }}</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('sales.receipt',sale_id=sale.id) }}" class="btn btn-secondary btn-sm no-print"><i class="fas fa-print"></i> Print Receipt</a>
+      {% if sale.payment_status in ('credit','partial') and not sale.is_voided %}
+      <a href="{{ url_for('sales.record_payment',sale_id=sale.id) }}" class="btn btn-success btn-sm">
+        <i class="fas fa-money-bill-wave"></i> Record Payment
+      </a>
+      {% endif %}
+      {% if current_user.is_manager and not sale.is_voided %}
+      <form method="POST" action="{{ url_for('sales.void_sale',sale_id=sale.id) }}" onsubmit="return confirm('Void this sale? Stock will be returned.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-ban"></i> Void</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if sale.is_voided %}<div class="alert alert-danger"><i class="fas fa-ban"></i> This sale has been voided.</div>{% endif %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <dl>
+        <dt class="text-muted">Date</dt><dd>{{ sale.sale_date.strftime('%d %B %Y %H:%M') }}</dd>
+        <dt class="text-muted mt-2">Customer</dt><dd>{{ sale.customer.name if sale.customer else 'Walk-in' }}</dd>
+        <dt class="text-muted mt-2">Cashier</dt><dd>{{ sale.cashier.full_name if sale.cashier else '-' }}</dd>
+      </dl>
+      <dl>
+        <dt class="text-muted">Payment Method</dt><dd>{{ sale.payment_method|upper }}</dd>
+        <dt class="text-muted mt-2">Status</dt>
+        <dd><span class="badge badge-{{ 'success' if sale.payment_status=='paid' else 'warning' }}">{{ sale.payment_status|upper }}</span></dd>
+        <dt class="text-muted mt-2">Notes</dt><dd>{{ sale.notes or '-' }}</dd>
+      </dl>
+    </div>
+    <table><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th>Total</th></tr></thead>
+    <tbody>
+      {% for item in sale.items %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.quantity }} {{ item.product.unit }}</td>
+        <td>GHS {{ "{:,.2f}".format(item.unit_price) }}</td>
+        <td>{{ item.discount }}%</td>
+        <td class="fw-600">GHS {{ "{:,.2f}".format(item.line_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    <div style="margin-top:1rem;text-align:right;max-width:260px;margin-left:auto">
+      <div class="d-flex justify-between"><span class="text-muted">Subtotal</span><span>GHS {{ "{:,.2f}".format(sale.subtotal) }}</span></div>
+      <div class="d-flex justify-between"><span class="text-muted">VAT</span><span>GHS {{ "{:,.2f}".format(sale.tax_amount) }}</span></div>
+      <div class="d-flex justify-between"><span class="text-muted">Discount</span><span>GHS {{ "{:,.2f}".format(sale.discount_amount) }}</span></div>
+      <div class="divider"></div>
+      <div class="d-flex justify-between fw-600" style="font-size:1.1rem"><span>Total</span><span>GHS {{ "{:,.2f}".format(sale.total_amount) }}</span></div>
+      <div class="d-flex justify-between text-muted mt-1"><span>Paid</span><span>GHS {{ "{:,.2f}".format(sale.amount_paid) }}</span></div>
+      <div class="d-flex justify-between text-muted"><span>Change</span><span>GHS {{ "{:,.2f}".format(sale.change_given) }}</span></div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

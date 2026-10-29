@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Suppliers{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-building"></i> Suppliers</span>
+    {% if current_user.is_manager %}<a href="{{ url_for('suppliers.new') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Supplier</a>{% endif %}
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="text" name="search" class="form-control search-input" placeholder="Name or phone..." value="{{ search }}">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>City</th><th>Terms</th><th>Products</th><th></th></tr></thead>
+    <tbody>
+      {% for s in suppliers.items %}
+      <tr>
+        <td><a href="{{ url_for('suppliers.detail',supplier_id=s.id) }}" class="fw-600">{{ s.name }}</a></td>
+        <td class="text-muted">{{ s.contact_person or '-' }}</td>
+        <td>{{ s.phone or '-' }}</td>
+        <td class="text-muted">{{ s.city or '-' }}</td>
+        <td class="text-muted">{{ s.payment_terms }} days</td>
+        <td>{{ s.products.count() }}</td>
+        <td>{% if current_user.is_manager %}<a href="{{ url_for('suppliers.edit',supplier_id=s.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a>{% endif %}</td>
+      </tr>
+      {% else %}<tr><td colspan="7" class="text-center text-muted">No suppliers found</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

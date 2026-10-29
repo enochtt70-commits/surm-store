@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-store"></i> Store Information</span></div>
+    <div class="card-body">
+      <dl>
+        <dt class="text-muted">Store Name</dt><dd class="fw-600 mb-2">Surm Store</dd>
+        <dt class="text-muted">Address</dt><dd class="mb-2">Bogoso, Western Region, Ghana</dd>
+        <dt class="text-muted">Phone</dt><dd class="mb-2">+233-XX-XXX-XXXX</dd>
+        <dt class="text-muted">Email</dt><dd class="mb-2">info@surmstore.com</dd>
+        <dt class="text-muted">VAT Rate</dt><dd class="mb-2">15%</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-database"></i> System</span></div>
+    <div class="card-body">
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('users.index') }}" class="btn btn-secondary"><i class="fas fa-users"></i> Manage Users</a>
+        <a href="{{ url_for('users.audit_log') }}" class="btn btn-secondary"><i class="fas fa-shield-alt"></i> Audit Log</a>
+        <a href="{{ url_for('products.categories') }}" class="btn btn-secondary"><i class="fas fa-tags"></i> Categories</a>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-secondary"><i class="fas fa-chart-bar"></i> Reports</a>
+      </div>
+    </div>
+  </div>
+</div>{% endblock %}

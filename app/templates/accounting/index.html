@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Accounting — Surm Store{% endblock %}
+{% block page_title %}Accounts & Finance{% endblock %}
+{% block content %}
+
+<!-- Top KPI cards -->
+<div class="stat-cards" style="margin-bottom:1.5rem">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-cash-register"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.cash_balance) }}</div>
+      <div class="stat-label">Cash in Till</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-mobile-alt"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.momo_balance) }}</div>
+      <div class="stat-label">Mobile Money (MoMo)</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-file-invoice"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.receivable_balance) }}</div>
+      <div class="stat-label">Accounts Receivable</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-chart-line"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.total_revenue) }}</div>
+      <div class="stat-label">Total Revenue (All Time)</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-receipt"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.total_expenses) }}</div>
+      <div class="stat-label">Total Expenses (All Time)</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon {{ 'green' if balances.month_profit >= 0 else 'red' }}"><i class="fas fa-trophy"></i></div>
+    <div>
+      <div class="stat-value">GHS {{ "{:,.2f}".format(balances.month_profit) }}</div>
+      <div class="stat-label">This Month Net Profit</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <!-- Month expenses by category -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-chart-pie"></i> This Month — Expenses by Category</span>
+      <a href="{{ url_for('accounting.new_expense') }}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus"></i> Add Expense
+      </a>
+    </div>
+    {% if exp_by_cat %}
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Category</th><th class="text-right">Amount (GHS)</th></tr></thead>
+        <tbody>
+          {% set ns = namespace(total=0) %}
+          {% for cat, total in exp_by_cat %}
+          {% set ns.total = ns.total + total %}
+          <tr>
+            <td><span class="badge badge-secondary">{{ cat }}</span></td>
+            <td class="text-right fw-600">{{ "{:,.2f}".format(total) }}</td>
+          </tr>
+          {% endfor %}
+          <tr style="border-top:2px solid #e2e8f0;background:#f8fafc">
+            <td class="fw-600">Total</td>
+            <td class="text-right fw-600" style="color:#dc2626">{{ "{:,.2f}".format(ns.total) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding:2rem">
+      <i class="fas fa-receipt" style="font-size:2rem;display:block;margin-bottom:.5rem;opacity:.3"></i>
+      No expenses recorded this month
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Outstanding credit sales -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-file-invoice-dollar" style="color:#ea580c"></i> Outstanding Credit Sales</span>
+      <a href="{{ url_for('sales.index') }}?payment_method=credit" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    {% if credit_sales %}
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Invoice</th><th>Customer</th><th>Total</th><th>Paid</th><th>Owed</th></tr></thead>
+        <tbody>
+          {% for s in credit_sales %}
+          <tr>
+            <td><a href="{{ url_for('sales.detail',sale_id=s.id) }}" class="fw-600">{{ s.invoice_number }}</a></td>
+            <td class="text-muted">{{ s.customer.name if s.customer else '—' }}</td>
+            <td>GHS {{ "{:,.2f}".format(s.total_amount) }}</td>
+            <td class="text-muted">GHS {{ "{:,.2f}".format(s.amount_paid) }}</td>
+            <td class="fw-600" style="color:#dc2626">GHS {{ "{:,.2f}".format(s.total_amount - s.amount_paid) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding:2rem">
+      <i class="fas fa-check-circle" style="font-size:2rem;display:block;margin-bottom:.5rem;color:#16a34a;opacity:.6"></i>
+      No outstanding credit sales
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent expenses -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-list"></i> Recent Expenses</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('accounting.expenses') }}" class="btn btn-secondary btn-sm">View All</a>
+      <a href="{{ url_for('accounting.new_expense') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> New</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Method</th><th>By</th></tr></thead>
+      <tbody>
+        {% for e in recent_expenses %}
+        <tr>
+          <td class="text-muted">{{ e.expense_date }}</td>
+          <td class="fw-600">{{ e.description }}</td>
+          <td><span class="badge badge-secondary">{{ e.category }}</span></td>
+          <td class="fw-600">GHS {{ "{:,.2f}".format(e.amount) }}</td>
+          <td class="text-muted">{{ e.payment_method|upper }}</td>
+          <td class="text-muted fs-sm">{{ e.user.full_name.split()[0] if e.user else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted">No expenses yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="d-flex gap-2 mt-3">
+  <a href="{{ url_for('accounting.new_expense') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Record Expense</a>
+  <a href="{{ url_for('reports.profit_loss') }}" class="btn btn-secondary"><i class="fas fa-chart-bar"></i> P&amp;L Report</a>
+  <a href="{{ url_for('reports.expenses_report') }}" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Expenses Report</a>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Record Payment — {{ sale.invoice_number }}{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <i class="fas fa-money-bill-wave" style="color:#16a34a"></i> Record Payment
+      </span>
+      <a href="{{ url_for('sales.detail',sale_id=sale.id) }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i> Back
+      </a>
+    </div>
+    <div class="card-body">
+
+      <!-- Sale summary -->
+      <div style="background:#f8fafc;border-radius:.5rem;padding:1rem;margin-bottom:1.5rem;border:1px solid #e2e8f0;font-size:.9rem">
+        <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+          <span class="text-muted">Invoice</span>
+          <span class="fw-600">{{ sale.invoice_number }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+          <span class="text-muted">Customer</span>
+          <span class="fw-600">{{ sale.customer.name if sale.customer else '—' }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+          <span class="text-muted">Sale Date</span>
+          <span>{{ sale.sale_date.strftime('%d/%m/%Y') }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+          <span class="text-muted">Sale Total</span>
+          <span class="fw-600">GHS {{ "{:,.2f}".format(sale.total_amount) }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+          <span class="text-muted">Already Paid</span>
+          <span style="color:#16a34a;font-weight:600">GHS {{ "{:,.2f}".format(sale.amount_paid) }}</span>
+        </div>
+        <hr style="border:none;border-top:2px solid #e2e8f0;margin:.6rem 0">
+        <div style="display:flex;justify-content:space-between;font-size:1.05rem">
+          <span class="fw-600">Outstanding Balance</span>
+          <span class="fw-600" style="color:#dc2626">GHS {{ "{:,.2f}".format(outstanding) }}</span>
+        </div>
+      </div>
+
+      <!-- Payment form -->
+      <form method="POST" id="paymentForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600;font-size:1rem">
+            Amount Tendered (GHS) *
+          </label>
+          <input type="number" step="0.01" min="0.01"
+                 name="amount" id="payAmount" class="form-control"
+                 required autofocus
+                 style="font-size:1.3rem;padding:.75rem 1rem;font-weight:600"
+                 placeholder="0.00"
+                 oninput="calcChange()">
+          <small class="form-text">Enter the full amount received from the customer. Change will be calculated automatically.</small>
+        </div>
+
+        <!-- Live calculation panel -->
+        <div id="calcPanel" style="display:none;border-radius:.5rem;padding:1rem;margin-bottom:1rem;font-size:.9rem;border:2px solid #e2e8f0">
+          <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+            <span class="text-muted">Outstanding</span>
+            <span>GHS {{ "{:,.2f}".format(outstanding) }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+            <span class="text-muted">Amount Tendered</span>
+            <span id="tenderedDisplay">GHS 0.00</span>
+          </div>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:.4rem 0">
+          <div style="display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700" id="changeRow">
+            <span id="changeLabel">Change</span>
+            <span id="changeDisplay" style="font-size:1.2rem">GHS 0.00</span>
+          </div>
+          <div id="statusMsg" style="margin-top:.5rem;font-size:.82rem;font-weight:600;text-align:center"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select name="payment_method_note" class="form-control form-select">
+            <option value="cash">Cash</option>
+            <option value="momo">Mobile Money (MoMo)</option>
+            <option value="bank">Bank Transfer</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input type="text" name="notes" class="form-control" placeholder="e.g. partial settlement, receipt no.">
+        </div>
+
+        <button type="submit" class="btn btn-success" style="width:100%;padding:.85rem;font-size:1rem;font-weight:700">
+          <i class="fas fa-check-circle"></i> Confirm &amp; Record Payment
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+var outstanding = {{ outstanding | float }};
+
+function gh(n) {
+  return 'GHS ' + parseFloat(n || 0).toLocaleString('en-GH', {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function calcChange() {
+  var amount  = parseFloat(document.getElementById('payAmount').value) || 0;
+  var panel   = document.getElementById('calcPanel');
+  var changeD = document.getElementById('changeDisplay');
+  var changeL = document.getElementById('changeLabel');
+  var statusM = document.getElementById('statusMsg');
+  var tend    = document.getElementById('tenderedDisplay');
+
+  if (amount <= 0) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  tend.textContent    = gh(amount);
+
+  var diff = amount - outstanding;   // positive = change, negative = still owes
+
+  if (diff > 0.005) {
+    // Overpaid — show change
+    changeL.textContent     = 'Change to give back';
+    changeD.textContent     = gh(diff);
+    changeD.style.color     = '#16a34a';
+    panel.style.borderColor = '#86efac';
+    panel.style.background  = '#f0fdf4';
+    statusM.textContent     = '✓ Full balance cleared. Give change of ' + gh(diff);
+    statusM.style.color     = '#16a34a';
+  } else if (diff > -0.005) {
+    // Exact payment
+    changeL.textContent     = 'Change';
+    changeD.textContent     = 'GHS 0.00';
+    changeD.style.color     = '#16a34a';
+    panel.style.borderColor = '#86efac';
+    panel.style.background  = '#f0fdf4';
+    statusM.textContent     = '✓ Exact amount — balance fully cleared.';
+    statusM.style.color     = '#16a34a';
+  } else {
+    // Partial payment — still owes
+    var stillOwes = outstanding - amount;
+    changeL.textContent     = 'Still outstanding after this payment';
+    changeD.textContent     = gh(stillOwes);
+    changeD.style.color     = '#dc2626';
+    panel.style.borderColor = '#fca5a5';
+    panel.style.background  = '#fef2f2';
+    statusM.textContent     = 'Partial payment — balance of ' + gh(stillOwes) + ' will remain.';
+    statusM.style.color     = '#d97706';
+  }
+}
+</script>
+{% endblock %}

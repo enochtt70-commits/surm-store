@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Expenses{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-file-invoice-dollar"></i> Expenses</span>
+    <a href="{{ url_for('accounting.new_expense') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Expense</a>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:150px">
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:150px">
+      <select name="category" class="form-control form-select" style="width:160px">
+        <option value="">All Categories</option>
+        {% for cat in ['Salaries','Restocking','Transport','Utilities','Rent','Miscellaneous'] %}
+        <option value="{{ cat }}" {{ 'selected' if category==cat }}>{{ cat }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Payment</th><th>By</th><th></th></tr></thead>
+    <tbody>
+      {% for e in expenses.items %}
+      <tr>
+        <td class="text-muted">{{ e.expense_date }}</td>
+        <td class="fw-600">{{ e.description }}</td>
+        <td><span class="badge badge-secondary">{{ e.category }}</span></td>
+        <td class="fw-600">GHS {{ "{:,.2f}".format(e.amount) }}</td>
+        <td class="text-muted">{{ e.payment_method|upper }}</td>
+        <td class="text-muted fs-sm">{{ e.user.full_name.split()[0] if e.user else '-' }}</td>
+        <td>{% if current_user.is_manager %}<a href="{{ url_for('accounting.edit_expense',expense_id=e.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a>{% endif %}</td>
+      </tr>
+      {% else %}<tr><td colspan="7" class="text-center text-muted">No expenses found</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>{% endblock %}

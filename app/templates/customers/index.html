@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Customers{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-users"></i> Customers</span>
+    <a href="{{ url_for('customers.new') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Customer</a>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="text" name="search" class="form-control search-input" placeholder="Name or phone..." value="{{ search }}">
+      <select name="type" class="form-control form-select" style="width:130px">
+        <option value="">All Types</option>
+        <option value="retail" {{ 'selected' if ctype=='retail' }}>Retail</option>
+        <option value="wholesale" {{ 'selected' if ctype=='wholesale' }}>Wholesale</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Name</th><th>Phone</th><th>Type</th><th>Credit Limit</th><th>Balance</th><th></th></tr></thead>
+    <tbody>
+      {% for c in customers.items %}
+      <tr>
+        <td><a href="{{ url_for('customers.detail',customer_id=c.id) }}" class="fw-600">{{ c.name }}</a></td>
+        <td>{{ c.phone or '-' }}</td>
+        <td><span class="badge badge-{{ 'info' if c.customer_type=='wholesale' else 'secondary' }}">{{ c.customer_type|title }}</span></td>
+        <td class="text-muted">GHS {{ "{:,.2f}".format(c.credit_limit) }}</td>
+        <td class="{{ 'stock-low' if c.outstanding_balance > 0 else '' }}">GHS {{ "{:,.2f}".format(c.outstanding_balance) }}</td>
+        <td><a href="{{ url_for('customers.edit',customer_id=c.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a></td>
+      </tr>
+      {% else %}<tr><td colspan="6" class="text-center text-muted">No customers found</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>{% endblock %}

@@ -1,0 +1,92 @@
+﻿# ─────────────────────────────────────────────
+# Surm Store — .gitignore
+# ─────────────────────────────────────────────
+
+# ── Python compiled files ─────────────────────
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# ── Virtual environments ──────────────────────
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# ── Environment variables (secrets) ──────────
+# .env.example is safe to commit — .env is NOT
+.env
+
+# ── SQLite database ───────────────────────────
+# The database lives in instance/ at runtime
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Flask session / instance folder ──────────
+instance/
+
+# ── Backups ───────────────────────────────────
+backups/
+
+# ── Migrations (keep empty folder, ignore content)
+migrations/*.py
+migrations/versions/
+
+# ── Logs ──────────────────────────────────────
+*.log
+logs/
+
+# ── Uploaded files ────────────────────────────
+app/static/uploads/
+app/static/receipts/
+
+# ── Distribution / packaging ──────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# ── Testing ───────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+
+# ── IDE / Editor ──────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# ── macOS ─────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── Windows ───────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Node (if any JS tooling added later) ──────
+node_modules/
+npm-debug.log*
+
+# ── Temporary files ───────────────────────────
+*.tmp
+*.temp
+*.bak

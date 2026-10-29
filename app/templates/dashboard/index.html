@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Surm Store{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="stat-cards">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
+    <div><div class="stat-value">GHS {{ "{:,.2f}".format(today_sales) }}</div><div class="stat-label">Today's Sales</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-chart-line"></i></div>
+    <div><div class="stat-value">GHS {{ "{:,.2f}".format(today_profit) }}</div><div class="stat-label">Today's Profit</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan"><i class="fas fa-calendar"></i></div>
+    <div><div class="stat-value">GHS {{ "{:,.2f}".format(month_sales) }}</div><div class="stat-label">Month Sales</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-trophy"></i></div>
+    <div><div class="stat-value">GHS {{ "{:,.2f}".format(month_profit) }}</div><div class="stat-label">Month Profit</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-receipt"></i></div>
+    <div><div class="stat-value">{{ today_transactions }}</div><div class="stat-label">Today's Transactions</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+    <div><div class="stat-value">{{ out_of_stock }}</div><div class="stat-label">Out of Stock</div></div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-chart-bar"></i> Weekly Sales vs Profit</span></div>
+    <div class="card-body"><canvas id="weeklyChart" height="120"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-chart-line"></i> Monthly Sales (6 months)</span></div>
+    <div class="card-body"><canvas id="monthlyChart" height="120"></canvas></div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:1rem">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-receipt"></i> Recent Sales</span>
+      <a href="{{ url_for('sales.index') }}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-responsive">
+      <table><thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Method</th><th>Time</th></tr></thead>
+      <tbody>
+        {% for s in recent_sales %}
+        <tr>
+          <td><a href="{{ url_for('sales.detail',sale_id=s.id) }}" class="fw-600">{{ s.invoice_number }}</a></td>
+          <td>{{ s.customer.name if s.customer else '<em class="text-muted">Walk-in</em>'|safe }}</td>
+          <td class="fw-600">GHS {{ "{:,.2f}".format(s.total_amount) }}</td>
+          <td><span class="badge badge-{{ 'success' if s.payment_method=='cash' else 'info' }}">{{ s.payment_method|upper }}</span></td>
+          <td class="text-muted">{{ s.sale_date.strftime('%H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted">No sales today</td></tr>
+        {% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-exclamation-triangle" style="color:#dc2626"></i> Low Stock</span>
+      <a href="{{ url_for('inventory.index') }}" class="btn btn-secondary btn-sm">View</a>
+    </div>
+    {% for p in low_stock_products %}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;border-bottom:1px solid #f1f5f9">
+      <div><div class="fs-sm fw-600">{{ p.name[:28] }}</div><div class="text-muted" style="font-size:.72rem">{{ p.sku }}</div></div>
+      <span class="badge badge-{{ 'danger' if p.current_stock==0 else 'warning' }}">{{ p.current_stock }} {{ p.unit }}</span>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding:2rem">All stock levels OK</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="d-flex gap-2 mt-3">
+  <a href="{{ url_for('sales.new') }}" class="btn btn-primary"><i class="fas fa-plus"></i> New Sale</a>
+  <a href="{{ url_for('purchases.new') }}" class="btn btn-secondary"><i class="fas fa-truck"></i> New Purchase</a>
+  <a href="{{ url_for('products.new') }}" class="btn btn-secondary"><i class="fas fa-box"></i> Add Product</a>
+  <a href="{{ url_for('accounting.new_expense') }}" class="btn btn-secondary"><i class="fas fa-receipt"></i> Record Expense</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const wl = {{ weekly_labels|safe }}, ws = {{ weekly_sales_data|safe }}, wp = {{ weekly_profit_data|safe }};
+const ml = {{ monthly_labels|safe }}, ms = {{ monthly_sales_data|safe }};
+new Chart(document.getElementById('weeklyChart'), {
+  type:'bar', data:{labels:wl,datasets:[
+    {label:'Sales',data:ws,backgroundColor:'rgba(37,99,235,.7)',borderRadius:4},
+    {label:'Profit',data:wp,backgroundColor:'rgba(22,163,74,.7)',borderRadius:4}
+  ]}, options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>'GHS '+v.toLocaleString()}}}}
+});
+new Chart(document.getElementById('monthlyChart'), {
+  type:'line', data:{labels:ml,datasets:[{label:'Monthly Sales',data:ms,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',tension:.4,fill:true}]},
+  options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>'GHS '+v.toLocaleString()}}}}
+});
+</script>
+{% endblock %}

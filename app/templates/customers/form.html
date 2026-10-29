@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if customer else 'New' }} Customer{% endblock %}
+{% block page_title %}{{ 'Edit' if customer else 'New' }} Customer{% endblock %}
+{% block content %}
+<div style="max-width:640px"><div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-user"></i> {{ 'Edit' if customer else 'Add' }} Customer</span></div>
+  <div class="card-body"><form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name" class="form-control" value="{{ customer.name if customer else '' }}" required></div>
+      <div class="form-group"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" value="{{ customer.phone if customer else '' }}"></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ customer.email if customer else '' }}"></div>
+      <div class="form-group"><label class="form-label">City</label><input type="text" name="city" class="form-control" value="{{ customer.city if customer else '' }}"></div>
+      <div class="form-group"><label class="form-label">Customer Type</label>
+        <select name="customer_type" class="form-control form-select">
+          <option value="retail" {{ 'selected' if not customer or customer.customer_type=='retail' }}>Retail</option>
+          <option value="wholesale" {{ 'selected' if customer and customer.customer_type=='wholesale' }}>Wholesale</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Credit Limit (GHS)</label><input type="number" step="0.01" name="credit_limit" class="form-control" value="{{ customer.credit_limit if customer else '0' }}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2">{{ customer.address if customer else '' }}</textarea></div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2">{{ customer.notes if customer else '' }}</textarea></div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ 'Update' if customer else 'Add' }} Customer</button>
+      <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form></div>
+</div></div>{% endblock %}

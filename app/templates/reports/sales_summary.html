@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Sales Summary{% endblock %}
+{% block page_title %}Sales Summary{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-receipt"></i> Sales Summary</span>
+    <button onclick="window.print()" class="btn btn-secondary btn-sm no-print"><i class="fas fa-print"></i> Print</button>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <label class="form-label" style="margin:0">From:</label>
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:150px">
+      <label class="form-label" style="margin:0">To:</label>
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:150px">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Filter</button>
+    </form>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;padding:1rem">
+    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-coins"></i></div><div><div class="stat-value">GHS {{ "{:,.2f}".format(total_revenue) }}</div><div class="stat-label">Total Revenue</div></div></div>
+    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-chart-line"></i></div><div><div class="stat-value">GHS {{ "{:,.2f}".format(gross_profit) }}</div><div class="stat-label">Gross Profit</div></div></div>
+    <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-percent"></i></div><div><div class="stat-value">{{ "{:.1f}".format(gross_profit/total_revenue*100 if total_revenue else 0) }}%</div><div class="stat-label">Profit Margin</div></div></div>
+    <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-receipt"></i></div><div><div class="stat-value">{{ sales|length }}</div><div class="stat-label">Transactions</div></div></div>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <strong>Revenue by Payment Method</strong>
+    <div class="d-flex gap-2 mt-2 flex-wrap">
+      {% for method,amount in by_payment.items() %}
+      <div class="stat-card" style="flex:0 0 auto;padding:.75rem 1rem">
+        <div><div class="fw-600">{{ method|upper }}</div><div class="text-muted fs-sm">GHS {{ "{:,.2f}".format(amount) }}</div></div>
+      </div>{% endfor %}
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Amount</th><th>VAT</th><th>Discount</th><th>Method</th></tr></thead>
+    <tbody>
+      {% for s in sales %}
+      <tr>
+        <td><a href="{{ url_for('sales.detail',sale_id=s.id) }}">{{ s.invoice_number }}</a></td>
+        <td class="text-muted">{{ s.sale_date.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ s.customer.name if s.customer else 'Walk-in' }}</td>
+        <td class="fw-600">GHS {{ "{:,.2f}".format(s.total_amount) }}</td>
+        <td class="text-muted">GHS {{ "{:,.2f}".format(s.tax_amount) }}</td>
+        <td class="text-muted">GHS {{ "{:,.2f}".format(s.discount_amount) }}</td>
+        <td><span class="badge badge-{{ 'success' if s.payment_method=='cash' else 'info' }}">{{ s.payment_method|upper }}</span></td>
+      </tr>
+      {% else %}<tr><td colspan="7" class="text-center text-muted">No sales in this period</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>{% endblock %}

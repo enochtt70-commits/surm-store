@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+  <a href="{{ url_for('reports.sales_summary') }}" class="card" style="text-decoration:none;padding:1.5rem;text-align:center">
+    <div class="stat-icon blue" style="margin:0 auto .75rem"><i class="fas fa-receipt"></i></div>
+    <div class="fw-600">Sales Summary</div><div class="text-muted fs-sm">Daily, weekly, monthly</div>
+  </a>
+  <a href="{{ url_for('reports.inventory_report') }}" class="card" style="text-decoration:none;padding:1.5rem;text-align:center">
+    <div class="stat-icon orange" style="margin:0 auto .75rem"><i class="fas fa-warehouse"></i></div>
+    <div class="fw-600">Inventory Report</div><div class="text-muted fs-sm">Stock valuation & movement</div>
+  </a>
+  <a href="{{ url_for('reports.profit_loss') }}" class="card" style="text-decoration:none;padding:1.5rem;text-align:center">
+    <div class="stat-icon green" style="margin:0 auto .75rem"><i class="fas fa-chart-line"></i></div>
+    <div class="fw-600">Profit & Loss</div><div class="text-muted fs-sm">Revenue vs expenses</div>
+  </a>
+  <a href="{{ url_for('reports.purchases_report') }}" class="card" style="text-decoration:none;padding:1.5rem;text-align:center">
+    <div class="stat-icon cyan" style="margin:0 auto .75rem"><i class="fas fa-truck"></i></div>
+    <div class="fw-600">Purchases Report</div><div class="text-muted fs-sm">PO history & payments</div>
+  </a>
+  <a href="{{ url_for('reports.expenses_report') }}" class="card" style="text-decoration:none;padding:1.5rem;text-align:center">
+    <div class="stat-icon red" style="margin:0 auto .75rem"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div class="fw-600">Expenses Report</div><div class="text-muted fs-sm">Cost breakdown by category</div>
+  </a>
+</div>
+{% endblock %}

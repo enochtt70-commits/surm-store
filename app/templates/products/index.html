@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Products - Surm Store{% endblock %}
+{% block page_title %}Products{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-box"></i> Products</span>
+    {% if current_user.can_manage_products %}
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('products.categories') }}" class="btn btn-secondary btn-sm"><i class="fas fa-tags"></i> Categories</a>
+      <a href="{{ url_for('products.new') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Product</a>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="text" name="search" class="form-control search-input" placeholder="Search products..." value="{{ search }}">
+      <select name="category" class="form-control form-select" style="width:160px">
+        <option value="">All Categories</option>
+        {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if category_id==c.id }}>{{ c.name }}</option>{% endfor %}
+      </select>
+      <select name="status" class="form-control form-select" style="width:120px">
+        <option value="active" {{ 'selected' if status=='active' }}>Active</option>
+        <option value="inactive" {{ 'selected' if status=='inactive' }}>Inactive</option>
+        <option value="all" {{ 'selected' if status=='all' }}>All</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Search</button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th data-sort>SKU</th><th data-sort>Product Name</th><th>Category</th><th>Cost</th><th>Price</th><th>Stock</th><th>Min</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for p in products.items %}
+        <tr>
+          <td class="text-muted fs-sm">{{ p.sku }}</td>
+          <td><a href="{{ url_for('products.detail',product_id=p.id) }}" class="fw-600">{{ p.name }}</a></td>
+          <td class="text-muted">{{ p.category.name if p.category else '-' }}</td>
+          <td>GHS {{ "{:,.2f}".format(p.cost_price) }}</td>
+          <td class="fw-600">GHS {{ "{:,.2f}".format(p.selling_price) }}</td>
+          <td class="{{ 'stock-low' if p.current_stock<=p.min_stock_level else 'stock-ok' }}">{{ p.current_stock }} {{ p.unit }}</td>
+          <td class="text-muted">{{ p.min_stock_level }}</td>
+          <td><span class="badge badge-{{ 'success' if p.is_active else 'secondary' }}">{{ 'Active' if p.is_active else 'Inactive' }}</span></td>
+          <td>
+            {% if current_user.can_manage_products %}
+            <a href="{{ url_for('products.edit',product_id=p.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted">No products found</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if products.pages > 1 %}
+<div class="d-flex justify-between align-center mt-3">
+  <span class="text-muted fs-sm">Showing {{ products.items|length }} of {{ products.total }} products</span>
+  <div class="pagination">
+    {% if products.has_prev %}<div class="page-item"><a href="{{ url_for('products.index',page=products.prev_num,search=search,category=category_id,status=status) }}">&laquo;</a></div>{% endif %}
+    {% for p in products.iter_pages() %}
+      {% if p %}<div class="page-item {{ 'active' if p==products.page }}"><{{ 'span' if p==products.page else 'a href="'+url_for('products.index',page=p,search=search,category=category_id,status=status)+'"' }}>{{ p }}</{{ 'span' if p==products.page else 'a' }}></div>{% else %}<div class="page-item"><span>&hellip;</span></div>{% endif %}
+    {% endfor %}
+    {% if products.has_next %}<div class="page-item"><a href="{{ url_for('products.index',page=products.next_num,search=search,category=category_id,status=status) }}">&raquo;</a></div>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

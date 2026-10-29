@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Login History{% endblock %}
+{% block page_title %}Login History{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-history"></i> Login History</span>
+    <a href="{{ url_for('users.index') }}" class="btn btn-secondary btn-sm">Back</a>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Time</th><th>Username</th><th>Result</th><th>IP Address</th><th>Browser</th></tr></thead>
+    <tbody>
+      {% for log in logs.items %}
+      <tr>
+        <td class="text-muted fs-sm">{{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+        <td class="fw-600">{{ log.username }}</td>
+        <td><span class="badge badge-{{ 'success' if log.success else 'danger' }}">{{ 'Success' if log.success else 'Failed' }}</span></td>
+        <td class="text-muted">{{ log.ip_address or '-' }}</td>
+        <td class="text-muted fs-sm">{{ (log.user_agent or '')[:50] }}</td>
+      </tr>{% else %}<tr><td colspan="5" class="text-center text-muted">No login history</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>{% endblock %}

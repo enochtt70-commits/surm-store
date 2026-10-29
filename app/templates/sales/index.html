@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Sales History{% endblock %}
+{% block page_title %}Sales History{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-receipt"></i> Sales History</span>
+    <a href="{{ url_for('sales.new') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> New Sale</a>
+  </div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="text" name="search" class="form-control search-input" placeholder="Invoice number..." value="{{ search }}">
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:150px">
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:150px">
+      <select name="payment_method" class="form-control form-select" style="width:140px">
+        <option value="">All Methods</option>
+        <option value="cash" {{ 'selected' if payment_method=='cash' }}>Cash</option>
+        <option value="momo" {{ 'selected' if payment_method=='momo' }}>MoMo</option>
+        <option value="credit" {{ 'selected' if payment_method=='credit' }}>Credit</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Cashier</th><th>Amount</th><th>Method</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in sales.items %}
+      <tr {{ 'style="opacity:.5"' if s.is_voided|safe }}>
+        <td><a href="{{ url_for('sales.detail',sale_id=s.id) }}" class="fw-600">{{ s.invoice_number }}</a></td>
+        <td class="text-muted">{{ s.sale_date.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td>{{ s.customer.name if s.customer else 'Walk-in' }}</td>
+        <td class="text-muted">{{ s.cashier.full_name.split()[0] if s.cashier else '-' }}</td>
+        <td class="fw-600">GHS {{ "{:,.2f}".format(s.total_amount) }}</td>
+        <td><span class="badge badge-{{ 'success' if s.payment_method=='cash' else 'info' }}">{{ s.payment_method|upper }}</span></td>
+        <td>
+          {% if s.is_voided %}<span class="badge badge-danger">VOIDED</span>
+          {% else %}<span class="badge badge-{{ 'success' if s.payment_status=='paid' else 'warning' }}">{{ s.payment_status|upper }}</span>{% endif %}
+        </td>
+        <td><a href="{{ url_for('sales.receipt',sale_id=s.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i></a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted">No sales found</td></tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% if sales.pages > 1 %}
+<div class="d-flex justify-between align-center mt-3">
+  <span class="text-muted fs-sm">{{ sales.total }} sales found</span>
+  <div class="pagination">
+    {% if sales.has_prev %}<div class="page-item"><a href="{{ url_for('sales.index',page=sales.prev_num,search=search,date_from=date_from,date_to=date_to) }}">&laquo;</a></div>{% endif %}
+    {% for p in sales.iter_pages() %}{% if p %}<div class="page-item {{ 'active' if p==sales.page }}"><{{ 'span' if p==sales.page else 'a href="'+url_for('sales.index',page=p,search=search)+'"' }}>{{ p }}</{{ 'span' if p==sales.page else 'a' }}></div>{% endif %}{% endfor %}
+    {% if sales.has_next %}<div class="page-item"><a href="{{ url_for('sales.index',page=sales.next_num,search=search,date_from=date_from,date_to=date_to) }}">&raquo;</a></div>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

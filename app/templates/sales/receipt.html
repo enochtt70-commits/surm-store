@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Receipt {{ sale.invoice_number }}{% endblock %}
+{% block page_title %}Receipt{% endblock %}
+{% block content %}
+
+<div class="no-print d-flex gap-2 mb-3">
+  <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print"></i> Print Receipt</button>
+  <a href="{{ url_for('sales.detail',sale_id=sale.id) }}" class="btn btn-secondary"><i class="fas fa-eye"></i> View Detail</a>
+  <a href="{{ url_for('sales.new') }}" class="btn btn-secondary"><i class="fas fa-plus"></i> New Sale</a>
+</div>
+
+<div class="receipt-paper" id="receipt-area">
+  <!-- Store Header -->
+  <div class="store-name">SURM STORE</div>
+  <div style="text-align:center;font-size:.75rem;margin-top:.1rem">Bogoso, Western Region, Ghana</div>
+  <div style="text-align:center;font-size:.75rem">Tel: +233-XX-XXX-XXXX</div>
+  <div style="text-align:center;font-size:.72rem;color:#555">info@surmstore.com</div>
+
+  <div class="divider"></div>
+
+  <!-- Sale Info -->
+  <div style="font-size:.75rem">
+    <div><strong>Invoice:</strong> {{ sale.invoice_number }}</div>
+    <div><strong>Date:</strong> {{ sale.sale_date.strftime('%d/%m/%Y %H:%M') }}</div>
+    <div><strong>Cashier:</strong> {{ sale.cashier.full_name if sale.cashier else '-' }}</div>
+    <div><strong>Payment:</strong> {{ sale.payment_method|upper }}</div>
+    {% if sale.customer %}<div><strong>Customer:</strong> {{ sale.customer.name }}</div>{% endif %}
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Items Table -->
+  <table style="width:100%;font-size:.75rem;border-collapse:collapse">
+    <thead>
+      <tr style="border-bottom:1px solid #333">
+        <th style="text-align:left;padding:.1rem 0">Item</th>
+        <th style="text-align:center">Qty</th>
+        <th style="text-align:right">Unit</th>
+        <th style="text-align:right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in sale.items %}
+      <tr>
+        <td style="padding:.2rem 0">{{ item.product.name[:22] }}</td>
+        <td style="text-align:center">{{ item.quantity }}</td>
+        <td style="text-align:right">{{ "{:.2f}".format(item.unit_price) }}</td>
+        <td style="text-align:right">{{ "{:.2f}".format(item.line_total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Totals -->
+  <div style="font-size:.8rem">
+    <div style="display:flex;justify-content:space-between;padding:.15rem 0">
+      <span>Subtotal</span>
+      <span>GHS {{ "{:.2f}".format(sale.subtotal) }}</span>
+    </div>
+
+    {% set tax_val = sale.tax_amount | float %}
+    {% if tax_val > 0 %}
+    <div style="display:flex;justify-content:space-between;padding:.15rem 0">
+      <span>VAT (15%)</span>
+      <span>GHS {{ "{:.2f}".format(sale.tax_amount) }}</span>
+    </div>
+    {% endif %}
+
+    {% set disc_val = sale.discount_amount | float %}
+    {% if disc_val > 0 %}
+    <div style="display:flex;justify-content:space-between;padding:.15rem 0">
+      <span>Discount</span>
+      <span>- GHS {{ "{:.2f}".format(sale.discount_amount) }}</span>
+    </div>
+    {% endif %}
+
+    <div class="divider"></div>
+
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:.95rem;padding:.2rem 0">
+      <span>TOTAL</span>
+      <span>GHS {{ "{:.2f}".format(sale.total_amount) }}</span>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:.15rem 0">
+      <span>Paid ({{ sale.payment_method|upper }})</span>
+      <span>GHS {{ "{:.2f}".format(sale.amount_paid) }}</span>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:.15rem 0">
+      <span>Change</span>
+      <span>GHS {{ "{:.2f}".format(sale.change_given) }}</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div style="text-align:center;font-size:.72rem">
+    Thank you for shopping at Surm Store!<br>
+    <span style="color:#555">Powered by Surm Store POS</span>
+  </div>
+</div>
+
+<style>
+@media print {
+  body * { visibility:hidden; }
+  #receipt-area, #receipt-area * { visibility:visible; }
+  #receipt-area { position:absolute; left:0; top:0; width:72mm; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Purchases Report{% endblock %}
+{% block page_title %}Purchases Report{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-truck"></i> Purchases Report</span></div>
+  <div class="card-body" style="padding:.75rem 1rem">
+    <form method="GET" class="search-bar">
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}" style="width:150px">
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}" style="width:150px">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:1rem">
+    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-truck"></i></div><div><div class="stat-value">{{ purchases|length }}</div><div class="stat-label">Purchase Orders</div></div></div>
+    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-coins"></i></div><div><div class="stat-value">GHS {{ "{:,.2f}".format(total) }}</div><div class="stat-label">Total Value</div></div></div>
+    <div class="stat-card"><div class="stat-icon red"><i class="fas fa-exclamation"></i></div><div><div class="stat-value">GHS {{ "{:,.2f}".format(outstanding) }}</div><div class="stat-label">Outstanding</div></div></div>
+  </div>
+  <div class="table-responsive"><table><thead><tr><th>PO Number</th><th>Supplier</th><th>Date</th><th>Total</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr></thead>
+  <tbody>{% for p in purchases %}
+  <tr>
+    <td><a href="{{ url_for('purchases.detail',purchase_id=p.id) }}" class="fw-600">{{ p.po_number }}</a></td>
+    <td>{{ p.supplier.name }}</td>
+    <td class="text-muted">{{ p.purchase_date.strftime('%d/%m/%Y') }}</td>
+    <td class="fw-600">GHS {{ "{:,.2f}".format(p.total_amount) }}</td>
+    <td>GHS {{ "{:,.2f}".format(p.amount_paid) }}</td>
+    <td class="{{ 'stock-low' if p.total_amount>p.amount_paid else '' }}">GHS {{ "{:,.2f}".format(p.total_amount-p.amount_paid) }}</td>
+    <td><span class="badge badge-{{ 'success' if p.status=='received' else ('warning' if p.status=='partial' else 'info') }}">{{ p.status|title }}</span></td>
+  </tr>{% else %}<tr><td colspan="7" class="text-center text-muted">No purchases found</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>{% endblock %}

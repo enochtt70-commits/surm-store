@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% block title %}New Sale - POS{% endblock %}
+{% block page_title %}Point of Sale{% endblock %}
+{% block content %}
+<input type="hidden" id="vat-rate" value="{{ vat_rate }}">
+
+<div style="display:grid;grid-template-columns:1fr 400px;gap:1rem;height:calc(100vh - 100px)">
+
+  <!-- LEFT: Search + Cart -->
+  <div style="display:flex;flex-direction:column;gap:1rem;overflow:hidden">
+
+    <!-- Product Search -->
+    <div class="card">
+      <div class="card-body" style="padding:.85rem">
+        <label class="form-label fw-600" style="margin-bottom:.4rem">
+          <i class="fas fa-search" style="color:#2563eb"></i> Search Product by Name or SKU
+        </label>
+        <input type="text" id="posSearch" class="form-control"
+               placeholder="Start typing a product name or SKU..."
+               autocomplete="off"
+               style="font-size:1rem;padding:.65rem 1rem">
+
+      </div>
+    </div>
+
+    <!-- Cart -->
+    <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-shopping-cart"></i> Cart</span>
+        <button type="button" onclick="posClearCart()"
+                class="btn btn-secondary btn-sm">
+          <i class="fas fa-trash"></i> Clear
+        </button>
+      </div>
+      <div id="posCartItems" style="flex:1;overflow-y:auto;padding:.5rem 0"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Order Summary -->
+  <div class="card" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-receipt"></i> Order Summary</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:1rem">
+      <form method="POST" id="posForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="items_json" id="posItemsJson" value="[]">
+        <input type="hidden" id="posTotalHidden" value="0">
+
+        <div class="form-group">
+          <label class="form-label">Customer (optional)</label>
+          <select name="customer_id" class="form-control form-select">
+            <option value="">Walk-in Customer</option>
+            {% for c in customers %}
+            <option value="{{ c.id }}">{{ c.name }}{% if c.phone %} — {{ c.phone }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select name="payment_method" class="form-control form-select">
+            <option value="cash">Cash</option>
+            <option value="momo">Mobile Money (MoMo)</option>
+            <option value="credit">Credit / Invoice</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Extra Discount (GHS)</label>
+          <input type="number" step="0.01" min="0" id="posDiscount"
+                 name="extra_discount" class="form-control" value="0"
+                 oninput="posRecalc()">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+          <input type="checkbox" id="posTax" name="apply_tax" class="form-check-input"
+                 style="width:18px;height:18px" onchange="posRecalc()">
+          <label for="posTax" style="margin:0;cursor:pointer">Apply VAT (15%)</label>
+        </div>
+
+        <!-- Totals block -->
+        <div style="background:#f8fafc;border-radius:.5rem;padding:.85rem;margin-bottom:1rem;font-size:.9rem;border:1px solid #e2e8f0">
+          <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+            <span style="color:#64748b">Subtotal</span>
+            <span id="posSubtotal">GHS 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+            <span style="color:#64748b">VAT (15%)</span>
+            <span id="posVat">GHS 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.2rem 0">
+            <span style="color:#64748b">Discount</span>
+            <span id="posDiscountDisplay">GHS 0.00</span>
+          </div>
+          <hr style="border:none;border-top:2px solid #e2e8f0;margin:.5rem 0">
+          <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700">
+            <span>TOTAL</span>
+            <span id="posTotal" style="color:#2563eb">GHS 0.00</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600">Amount Paid (GHS)</label>
+          <input type="number" step="0.01" min="0" id="posPaid"
+                 name="amount_paid" class="form-control"
+                 placeholder="Enter amount received"
+                 style="font-size:1.1rem;padding:.65rem 1rem"
+                 oninput="posUpdateChange()">
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding:.65rem 1rem;background:#f0fdf4;border-radius:.5rem;
+                    margin-bottom:1rem;border:1px solid #bbf7d0">
+          <span style="font-weight:600;color:#15803d">Change</span>
+          <span id="posChange" style="font-weight:700;font-size:1.2rem;color:#16a34a">GHS 0.00</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input type="text" name="notes" class="form-control"
+                 placeholder="e.g. customer order ref">
+        </div>
+
+        <button type="button" onclick="posCheckout()"
+                id="posCheckoutBtn"
+                class="btn btn-primary"
+                style="width:100%;padding:.9rem;font-size:1.05rem;font-weight:700;letter-spacing:.02em">
+          <i class="fas fa-check-circle"></i>&nbsp; Complete Sale
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Dropdown portal - outside all overflow:hidden containers -->
+<div id="posDropdown" style="display:none;position:fixed;background:#fff;border:2px solid #2563eb;border-radius:.5rem;box-shadow:0 8px 24px rgba(37,99,235,.18);overflow-y:auto;z-index:99999;max-height:350px"></div>
+<script>
+(function() {
+  /* ── state ── */
+  var cart = [];
+  var VAT  = parseFloat(document.getElementById('vat-rate').value) || 0.15;
+
+  /* ── currency ── */
+  function gh(n) {
+    n = parseFloat(n) || 0;
+    return 'GHS ' + n.toLocaleString('en-GH', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  /* ── search ── */
+  var timer;
+  var inp = document.getElementById('posSearch');
+  var box = document.getElementById('posDropdown');
+
+  inp.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = this.value.trim();
+    if (!q) { hideBox(); return; }
+    timer = setTimeout(function() { search(q); }, 280);
+  });
+
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') hideBox();
+  });
+
+  document.addEventListener('mousedown', function(e) {
+    if (!inp.contains(e.target) && !box.contains(e.target)) hideBox();
+  });
+
+  function hideBox() {
+    box.style.display = 'none';
+    box.innerHTML = '';
+  }
+
+  function positionBox() {
+    var rect = inp.getBoundingClientRect();
+    box.style.top    = (rect.bottom + 2) + 'px';
+    box.style.left   = rect.left + 'px';
+    box.style.width  = rect.width + 'px';
+  }
+
+  function search(q) {
+    var url = '/products/search-json?q=' + encodeURIComponent(q);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.withCredentials = true;
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          showBox(data, q);
+        } catch(e) {
+          showErr('Response error — are you logged in?');
+        }
+      } else if (xhr.status === 302 || xhr.status === 401) {
+        showErr('Session expired. Please refresh and log in again.');
+      } else {
+        showErr('Error ' + xhr.status);
+      }
+    };
+    xhr.onerror = function() { showErr('Network error'); };
+    xhr.send();
+  }
+
+  function showErr(msg) {
+    positionBox();
+    box.style.display = 'block';
+    box.innerHTML = '<div style="padding:.75rem 1rem;color:#dc2626"><i class="fas fa-exclamation-circle"></i> ' + msg + '</div>';
+  }
+
+  function showBox(list, q) {
+    if (!list.length) {
+      box.style.display = 'block';
+      box.innerHTML = '<div style="padding:.75rem 1rem;color:#64748b"><i class="fas fa-search"></i> No products found for <em>' + q + '</em></div>';
+      return;
+    }
+    var rows = '';
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      var sc = p.stock === 0 ? '#dc2626' : (p.stock <= 5 ? '#d97706' : '#16a34a');
+      /* encode name/unit safely for the onclick attribute */
+      var n64 = btoa(unescape(encodeURIComponent(p.name)));
+      var u64 = btoa(unescape(encodeURIComponent(p.unit)));
+      rows += '<div onclick="posAdd(' + p.id + ',\'' + n64 + '\',' + p.price + ',\'' + u64 + '\',' + p.stock + ')"' +
+        ' style="padding:.6rem 1rem;cursor:pointer;border-bottom:1px solid #f1f5f9' + (p.stock===0?';opacity:.5':'') + '"' +
+        ' onmouseover="this.style.background=\'#eff6ff\'" onmouseout="this.style.background=\'\'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<span style="font-weight:600">' + p.name + '</span>'+
+        '<span style="font-weight:700;color:#2563eb;flex-shrink:0;margin-left:.5rem">' + gh(p.price) + '</span>'+
+        '</div>'+
+        '<div style="font-size:.76rem;color:#9ca3af;margin-top:.15rem">' + p.sku + '</div>'+
+        '<div style="font-size:.76rem;color:' + sc + ';margin-top:.1rem">'+
+        '<i class="fas fa-cube"></i> ' + p.stock + ' ' + p.unit + ' in stock' + (p.stock===0?' — OUT OF STOCK':'') +
+        '</div></div>';
+    }
+    positionBox();
+    box.style.display = 'block';
+    box.innerHTML = rows;
+  }
+
+  /* ── add to cart (name/unit passed as base64 to avoid quote issues) ── */
+  window.posAdd = function(id, n64, price, u64, stock) {
+    var name = decodeURIComponent(escape(atob(n64)));
+    var unit = decodeURIComponent(escape(atob(u64)));
+    if (stock === 0) { alert(name + ' is out of stock.'); return; }
+    var existing = null;
+    for (var i = 0; i < cart.length; i++) { if (cart[i].id === id) { existing = cart[i]; break; } }
+    if (existing) {
+      if (existing.qty < stock) { existing.qty++; }
+      else { alert('Only ' + stock + ' ' + unit + ' in stock.'); return; }
+    } else {
+      cart.push({ id:id, name:name, price:price, unit:unit, stock:stock, qty:1 });
+    }
+    inp.value = '';
+    hideBox();
+    renderCart();
+  };
+
+  /* ── cart operations ── */
+  window.posRemove = function(id) {
+    cart = cart.filter(function(x){ return x.id !== id; });
+    renderCart();
+  };
+
+  window.posQty = function(id, v) {
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].id === id) {
+        var q = parseInt(v) || 1;
+        cart[i].qty = Math.max(1, Math.min(q, cart[i].stock));
+        break;
+      }
+    }
+    renderCart();
+  };
+
+  window.posClearCart = function() {
+    if (!cart.length) return;
+    if (!confirm('Clear cart?')) return;
+    cart = [];
+    renderCart();
+  };
+
+  function renderCart() {
+    var el = document.getElementById('posCartItems');
+    if (!cart.length) {
+      el.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem;color:#cbd5e1">'+
+        '<i class="fas fa-shopping-basket" style="font-size:2.5rem;display:block;margin-bottom:.75rem"></i>'+
+        'Cart is empty<br><small>Search a product above and click to add</small></div>';
+      posRecalc(); return;
+    }
+    var rows = '';
+    for (var i = 0; i < cart.length; i++) {
+      var it = cart[i];
+      var lt = it.price * it.qty;
+      rows += '<div style="display:flex;gap:.4rem;align-items:center;padding:.5rem .75rem;border-bottom:1px solid #f1f5f9">'+
+        '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:600;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + it.name + '</div>'+
+        '<div style="font-size:.75rem;color:#9ca3af">' + gh(it.price) + ' / ' + it.unit + '</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:.2rem;align-items:center;flex-shrink:0">'+
+        '<button type="button" onclick="posQty(' + it.id + ',' + (it.qty-1) + ')" style="width:28px;height:28px;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;font-size:1.1rem;background:#f9fafb">&#8722;</button>'+
+        '<input type="number" value="' + it.qty + '" min="1" max="' + it.stock + '" onchange="posQty(' + it.id + ',this.value)" style="width:44px;text-align:center;border:1px solid #d1d5db;border-radius:4px;padding:.2rem;font-size:.85rem">'+
+        '<button type="button" onclick="posQty(' + it.id + ',' + (it.qty+1) + ')" style="width:28px;height:28px;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;font-size:1.1rem;background:#f9fafb">&#43;</button>'+
+        '<button type="button" onclick="posRemove(' + it.id + ')" style="width:28px;height:28px;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;font-size:1.1rem;background:#fef2f2;color:#dc2626">&times;</button>'+
+        '</div>'+
+        '<div style="min-width:80px;text-align:right;font-weight:700;font-size:.85rem;flex-shrink:0">' + gh(lt) + '</div>'+
+        '</div>';
+    }
+    el.innerHTML = rows;
+    posRecalc();
+  }
+
+  /* ── totals ── */
+  window.posRecalc = function() {
+    var sub  = cart.reduce(function(s,i){ return s + i.price*i.qty; }, 0);
+    var disc = parseFloat(document.getElementById('posDiscount').value) || 0;
+    var tax  = document.getElementById('posTax').checked ? sub * VAT : 0;
+    var tot  = Math.max(0, sub + tax - disc);
+    document.getElementById('posSubtotal').textContent       = gh(sub);
+    document.getElementById('posVat').textContent            = gh(tax);
+    document.getElementById('posDiscountDisplay').textContent= gh(disc);
+    document.getElementById('posTotal').textContent          = gh(tot);
+    document.getElementById('posTotalHidden').value          = tot.toFixed(2);
+    posUpdateChange();
+  };
+
+  window.posUpdateChange = function() {
+    var paid   = parseFloat(document.getElementById('posPaid').value) || 0;
+    var total  = parseFloat(document.getElementById('posTotalHidden').value) || 0;
+    var change = paid - total;
+    var el     = document.getElementById('posChange');
+    el.textContent = gh(Math.max(0, change));
+    el.style.color = change < 0 ? '#dc2626' : '#16a34a';
+  };
+
+  /* ── checkout ── */
+  window.posCheckout = function() {
+    if (!cart.length) { alert('Cart is empty. Add products first.'); return; }
+    var items = cart.map(function(i) {
+      return { product_id:i.id, quantity:i.qty, unit_price:i.price, discount:0 };
+    });
+    document.getElementById('posItemsJson').value = JSON.stringify(items);
+    document.getElementById('posForm').submit();
+  };
+
+
+  window.addEventListener('scroll', function(){ if(box.style.display!=='none') positionBox(); }, true);
+  window.addEventListener('resize', function(){ if(box.style.display!=='none') positionBox(); });
+
+  /* init */
+  renderCart();
+})();
+
+  // ── Credit sale validation ──
+  document.getElementById('posForm').addEventListener('submit', function(e) {
+    // This never fires (we use posCheckout) but kept as fallback
+  });
+
+  // Watch payment method to show/hide credit warning
+  var pmSel = document.querySelector('[name="payment_method"]');
+  var custSel = document.querySelector('[name="customer_id"]');
+  if (pmSel) {
+    function checkCreditWarning() {
+      var existing = document.getElementById('creditWarning');
+      if (pmSel.value === 'credit') {
+        if (!existing) {
+          var w = document.createElement('div');
+          w.id = 'creditWarning';
+          w.style.cssText = 'background:#fffbeb;border:1px solid #fcd34d;border-radius:.4rem;padding:.6rem .9rem;font-size:.82rem;color:#92400e;margin-top:.4rem';
+          w.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Credit sales require a registered customer. Walk-in customers cannot buy on credit.';
+          pmSel.parentNode.insertBefore(w, pmSel.nextSibling);
+        }
+        if (custSel) custSel.required = true;
+      } else {
+        if (existing) existing.remove();
+        if (custSel) custSel.required = false;
+      }
+    }
+    pmSel.addEventListener('change', checkCreditWarning);
+    checkCreditWarning();
+  }
+
+  // Override posCheckout to validate credit
+  var _origCheckout = window.posCheckout;
+  window.posCheckout = function() {
+    var pm = document.querySelector('[name="payment_method"]');
+    var cust = document.querySelector('[name="customer_id"]');
+    if (pm && pm.value === 'credit' && cust && !cust.value) {
+      alert('Please select a registered customer for credit sales.\nWalk-in customers cannot buy on credit.');
+      cust.focus();
+      return;
+    }
+    if (typeof _origCheckout === 'function') _origCheckout();
+  };
+
+</script>
+{% endblock %}

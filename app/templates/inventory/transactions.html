@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Inventory Transactions{% endblock %}
+{% block page_title %}Inventory Transaction Log{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Transaction History</span>
+    <a href="{{ url_for('inventory.index') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr><th>Date/Time</th><th>Product</th><th>Type</th><th>Quantity</th><th>Reference</th><th>User</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for txn in transactions.items %}
+        <tr>
+          <td class="text-muted fs-sm">{{ txn.created_at.strftime('%d %b %Y %H:%M') }}</td>
+          <td class="fw-600">{{ txn.product.name if txn.product else '-' }}</td>
+          <td><span class="badge badge-{{ 'success' if 'in' in txn.transaction_type or txn.transaction_type == 'purchase' else 'danger' }}">{{ txn.transaction_type|replace('_',' ')|title }}</span></td>
+          <td>{{ txn.quantity }}</td>
+          <td class="text-muted fs-sm">{{ txn.reference_type|title + ' #' + txn.reference_id|string if txn.reference_id else '-' }}</td>
+          <td class="text-muted fs-sm">{{ txn.user.full_name if txn.user else '-' }}</td>
+          <td class="text-muted fs-sm">{{ txn.notes or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted" style="padding:2rem;">No transactions found</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

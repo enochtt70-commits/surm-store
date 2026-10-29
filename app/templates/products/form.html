@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if product else 'New' }} Product{% endblock %}
+{% block page_title %}{{ 'Edit' if product else 'New' }} Product{% endblock %}
+{% block content %}
+<div style="max-width:760px">
+<div class="card">
+  <div class="card-header"><span class="card-title"><i class="fas fa-box"></i> {{ 'Edit' if product else 'Add New' }} Product</span></div>
+  <div class="card-body">
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div class="form-group">
+        <label class="form-label">Product Name *</label>
+        <input type="text" name="name" class="form-control" value="{{ product.name if product else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SKU *</label>
+        <input type="text" name="sku" class="form-control" value="{{ product.sku if product else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select name="category_id" class="form-control form-select">
+          <option value="">Select category</option>
+          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if product and product.category_id==c.id }}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplier</label>
+        <select name="supplier_id" class="form-control form-select">
+          <option value="">Select supplier</option>
+          {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if product and product.supplier_id==s.id }}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cost Price (GHS) *</label>
+        <input type="number" step="0.01" name="cost_price" class="form-control" value="{{ product.cost_price if product else '0.00' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Selling Price (GHS) *</label>
+        <input type="number" step="0.01" name="selling_price" class="form-control" value="{{ product.selling_price if product else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit</label>
+        <select name="unit" class="form-control form-select">
+          {% for u in ['piece','kg','litre','pack','box','roll','bag','set','pair','metre'] %}
+          <option value="{{ u }}" {{ 'selected' if product and product.unit==u }}>{{ u|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Barcode</label>
+        <input type="text" name="barcode" class="form-control" value="{{ product.barcode if product and product.barcode else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Min Stock Level</label>
+        <input type="number" name="min_stock_level" class="form-control" value="{{ product.min_stock_level if product else '10' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reorder Point</label>
+        <input type="number" name="reorder_point" class="form-control" value="{{ product.reorder_point if product else '15' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-control" rows="3">{{ product.description if product else '' }}</textarea>
+    </div>
+    <div class="form-check mb-3">
+      <input type="checkbox" name="is_taxable" id="taxable" class="form-check-input" {{ 'checked' if not product or product.is_taxable }}>
+      <label for="taxable" class="form-label" style="margin:0">Apply VAT (15%)</label>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ 'Update' if product else 'Create' }} Product</button>
+      <a href="{{ url_for('products.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+  </div>
+</div>
+</div>
+{% endblock %}

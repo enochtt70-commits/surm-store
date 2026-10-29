@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ supplier.name }}{% endblock %}
+{% block page_title %}Supplier Detail{% endblock %}
+{% block content %}
+<div style="max-width:700px"><div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ supplier.name }}</span>
+    {% if current_user.is_manager %}<a href="{{ url_for('suppliers.edit',supplier_id=supplier.id) }}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>{% endif %}
+  </div>
+  <div class="card-body">
+    <dl style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.5rem">
+      <dt class="text-muted">Contact Person</dt><dd>{{ supplier.contact_person or '-' }}</dd>
+      <dt class="text-muted">Phone</dt><dd>{{ supplier.phone or '-' }}</dd>
+      <dt class="text-muted">Email</dt><dd>{{ supplier.email or '-' }}</dd>
+      <dt class="text-muted">Address</dt><dd>{{ supplier.address or '-' }}</dd>
+      <dt class="text-muted">City / Region</dt><dd>{{ supplier.city or '' }}{% if supplier.region %}, {{ supplier.region }}{% endif %}</dd>
+      <dt class="text-muted">TIN</dt><dd>{{ supplier.tin_number or '-' }}</dd>
+      <dt class="text-muted">Payment Terms</dt><dd>{{ supplier.payment_terms }} days</dd>
+      <dt class="text-muted">Total Purchases</dt><dd class="fw-600">{{ supplier.purchases.count() }} orders</dd>
+    </dl>
+    {% if supplier.notes %}<p class="mt-3 text-muted">{{ supplier.notes }}</p>{% endif %}
+  </div>
+</div></div>{% endblock %}

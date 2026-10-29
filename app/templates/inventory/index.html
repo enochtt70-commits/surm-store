@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Inventory{% endblock %}
+{% block page_title %}Inventory Management{% endblock %}
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+  <form class="search-bar" method="GET">
+    <input type="text" name="search" class="form-control search-input" placeholder="Search products..." value="{{ search }}">
+    <select name="filter" class="form-control form-select" style="width:160px;">
+      <option value="low_stock" {% if filter_type == 'low_stock' %}selected{% endif %}>Low Stock</option>
+      <option value="out_of_stock" {% if filter_type == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+      <option value="over_stock" {% if filter_type == 'over_stock' %}selected{% endif %}>Over Stock</option>
+      <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Products</option>
+    </select>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+  </form>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('inventory.transactions') }}" class="btn btn-secondary"><i class="fas fa-history"></i> Transaction Log</a>
+    <a href="{{ url_for('inventory.adjust') }}" class="btn btn-primary"><i class="fas fa-edit"></i> Adjust Stock</a>
+  </div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr><th>Product</th><th>SKU</th><th>Category</th><th>Current Stock</th><th>Min Level</th><th>Reorder Point</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for product in products.items %}
+        <tr>
+          <td class="fw-600">{{ product.name }}</td>
+          <td class="fs-sm text-muted">{{ product.sku }}</td>
+          <td class="fs-sm">{{ product.category.name if product.category else '-' }}</td>
+          <td>
+            <span class="{{ 'stock-low' if product.current_stock == 0 else ('stock-warn' if product.is_low_stock else 'stock-ok') }}">
+              {{ product.current_stock }} {{ product.unit }}
+            </span>
+          </td>
+          <td class="text-muted">{{ product.min_stock_level }}</td>
+          <td class="text-muted">{{ product.reorder_point }}</td>
+          <td>
+            {% if product.current_stock == 0 %}
+              <span class="badge badge-danger">Out of Stock</span>
+            {% elif product.is_low_stock %}
+              <span class="badge badge-warning">Low Stock</span>
+            {% else %}
+              <span class="badge badge-success">In Stock</span>
+            {% endif %}
+          </td>
+          <td><a href="{{ url_for('inventory.adjust') }}?product={{ product.id }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted" style="padding:2rem;">No products match the filter</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

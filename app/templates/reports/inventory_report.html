@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Inventory Report{% endblock %}
+{% block page_title %}Inventory Report{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-boxes"></i></div><div><div class="stat-value">{{ products|length }}</div><div class="stat-label">Total Products</div></div></div>
+  <div class="stat-card"><div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div><div><div class="stat-value">GHS {{ "{:,.2f}".format(total_value) }}</div><div class="stat-label">Total Stock Value</div></div></div>
+  <div class="stat-card"><div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-value">{{ out_of_stock|length }}</div><div class="stat-label">Out of Stock</div></div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-fire"></i> Top 10 Fast Movers (30 days)</span></div>
+    <div class="table-responsive"><table><thead><tr><th>Product</th><th>Units Sold</th></tr></thead><tbody>
+      {% for name,sold in top_movers %}<tr><td>{{ name }}</td><td class="fw-600">{{ sold }}</td></tr>{% else %}<tr><td colspan="2" class="text-center text-muted">No data</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title"><i class="fas fa-hourglass"></i> Slow Movers (30 days)</span></div>
+    <div class="table-responsive"><table><thead><tr><th>Product</th><th>Units Sold</th></tr></thead><tbody>
+      {% for name,sold in slow_movers %}<tr><td>{{ name }}</td><td class="text-muted">{{ sold }}</td></tr>{% else %}<tr><td colspan="2" class="text-center text-muted">No data</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title">Full Inventory Valuation</span><button onclick="window.print()" class="btn btn-secondary btn-sm no-print"><i class="fas fa-print"></i></button></div>
+  <div class="table-responsive"><table><thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>Stock</th><th>Cost</th><th>Value</th><th>Status</th></tr></thead><tbody>
+    {% for p in products %}
+    <tr>
+      <td class="text-muted fs-sm">{{ p.sku }}</td>
+      <td class="fw-600">{{ p.name }}</td>
+      <td class="text-muted">{{ p.category.name if p.category else '-' }}</td>
+      <td class="{{ 'stock-low' if p.current_stock==0 else ('stock-warn' if p.current_stock<=p.min_stock_level else '') }}">{{ p.current_stock }} {{ p.unit }}</td>
+      <td class="text-muted">GHS {{ "{:,.2f}".format(p.cost_price) }}</td>
+      <td class="fw-600">GHS {{ "{:,.2f}".format(p.stock_value) }}</td>
+      <td>{% if p.current_stock==0 %}<span class="badge badge-danger">Out</span>{% elif p.current_stock<=p.min_stock_level %}<span class="badge badge-warning">Low</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
+    </tr>{% endfor %}
+  </tbody></table></div>
+</div>{% endblock %}
