@@ -1,4 +1,5 @@
 
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -14,6 +15,11 @@ mail = Mail()
 def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    if config_name == "production":
+        if not app.config["SECRET_KEY"] or len(app.config["SECRET_KEY"]) < 32:
+            raise RuntimeError("Set a unique SECRET_KEY of at least 32 characters in production.")
+        if not app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql"):
+            raise RuntimeError("DATABASE_URL must point to persistent PostgreSQL in production.")
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
@@ -56,21 +62,37 @@ def create_app(config_name="default"):
 
     with app.app_context():
         db.create_all()
-        _seed()
+        _seed(production=config_name == "production")
     return app
 
-def _seed():
+def _seed(production=False):
     from app.models.user import User
     from app.models.product import Category
     from app.models.accounting import Account
     if not User.query.first():
-        for uname,email,fname,role,pwd in [
-            ("admin","admin@surmstore.com","Super Admin","super_admin","Admin@123"),
-            ("peterbrakoh","peter@surmstore.com","Mr. Peter Brakoh","owner","Peter@123"),
-            ("victoria","victoria@surmstore.com","Miss Victoria Eshun","manager","Victoria@123"),
-            ("enoch","enoch@surmstore.com","Mr. Enoch Delali Tetteh","accountant","Enoch@123"),
-            ("michael","michael@surmstore.com","Mr. Michael Obeng","shopkeeper","Michael@123"),
-        ]:
+        if production:
+            username = os.environ.get("INITIAL_ADMIN_USERNAME")
+            email = os.environ.get("INITIAL_ADMIN_EMAIL")
+            password = os.environ.get("INITIAL_ADMIN_PASSWORD")
+            if not all((username, email, password)):
+                raise RuntimeError(
+                    "INITIAL_ADMIN_USERNAME, INITIAL_ADMIN_EMAIL, and "
+                    "INITIAL_ADMIN_PASSWORD must be set to initialize production."
+                )
+            if len(password) < 12:
+                raise RuntimeError("INITIAL_ADMIN_PASSWORD must be at least 12 characters.")
+            initial_users = [
+                (username, email, "Store Administrator", "super_admin", password),
+            ]
+        else:
+            initial_users = [
+                ("admin","admin@surmstore.com","Super Admin","super_admin","Admin@123"),
+                ("peterbrakoh","peter@surmstore.com","Mr. Peter Brakoh","owner","Peter@123"),
+                ("victoria","victoria@surmstore.com","Miss Victoria Eshun","manager","Victoria@123"),
+                ("enoch","enoch@surmstore.com","Mr. Enoch Delali Tetteh","accountant","Enoch@123"),
+                ("michael","michael@surmstore.com","Mr. Michael Obeng","shopkeeper","Michael@123"),
+            ]
+        for uname,email,fname,role,pwd in initial_users:
             u = User(username=uname,email=email,full_name=fname,role=role)
             u.set_password(pwd)
             db.session.add(u)

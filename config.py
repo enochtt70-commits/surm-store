@@ -3,9 +3,13 @@ from datetime import timedelta
 from dotenv import load_dotenv
 load_dotenv()
 
+database_url = os.environ.get('DATABASE_URL') or 'sqlite:///surm_store.db'
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'surm-store-secret-key-2024'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///surm_store.db'
+    SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True, 'pool_recycle': 300}
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
@@ -32,6 +36,7 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     SESSION_COOKIE_SECURE = True
 
 config = {'development': DevelopmentConfig, 'production': ProductionConfig, 'default': DevelopmentConfig}

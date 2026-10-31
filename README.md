@@ -21,17 +21,22 @@ Built with Python Flask, SQLAlchemy, and SQLite.
 
 ---
 
-## Default Login Credentials
+## Local Development Login
 
-| Role | Username | Password |
-|------|----------|----------|
-| Super Administrator | `admin` | `Admin@123` |
-| Owner | `peterbrakoh` | `Peter@123` |
-| Manager | `victoria` | `Victoria@123` |
-| Accountant | `enoch` | `Enoch@123` |
-| Shopkeeper | `michael` | `Michael@123` |
+The development database is seeded with sample users when it is empty. Their credentials are configured in `app/__init__.py` and are for local testing only. Production uses a separately configured administrator account; never use development credentials online.
 
-> **Change all passwords immediately after first login.**
+## Deployment
+
+The app can run on Render with PostgreSQL. Connect the GitHub repository to a Render web service, use `pip install -r requirements.txt` as the build command, and use `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120` as the start command. Set:
+
+- `FLASK_ENV` to `production`
+- `SECRET_KEY` to a unique secret value
+- `DATABASE_URL` to a persistent PostgreSQL connection string
+- `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL`, and `INITIAL_ADMIN_PASSWORD` to the first administrator's credentials
+
+Set a unique `SECRET_KEY` of at least 32 characters and set the initial administrator password (at least 12 characters) as a secret in the hosting dashboard, not in Git or this file. The app creates only this administrator on a new production database; development sample accounts are not created in production. After the first administrator exists, the initial-credential variables are not used to replace or reset users.
+
+Use persistent PostgreSQL storage for store records. The production configuration rejects SQLite, requires a valid `SECRET_KEY`, and enables secure session cookies.
 
 ---
 
