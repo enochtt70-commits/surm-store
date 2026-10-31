@@ -38,6 +38,10 @@ Set a unique `SECRET_KEY` of at least 32 characters and set the initial administ
 
 Use persistent PostgreSQL storage for store records. The production configuration rejects SQLite, requires a valid `SECRET_KEY`, and enables secure session cookies.
 
+## Data Reset
+
+The super administrator can open **Settings → Manage and clear data** to delete individual business records or clear all business data and history while retaining every user account. A full reset requires the super administrator's current password and the exact confirmation phrase `CLEAR ALL DATA`. It also removes products, categories, and accounts; the app does not recreate its default categories or accounts after a reset.
+
 ---
 
 ## Quick Start

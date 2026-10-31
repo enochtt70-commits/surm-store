@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Data Management{% endblock %}
+{% block page_title %}Data Management{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><span class="card-title"><i class="fas fa-trash-alt"></i> Delete Individual Records</span></div>
+  <div class="card-body">
+    <p class="text-muted">Only the super administrator can delete records. User accounts cannot be deleted here. Linked records may need to be removed first.</p>
+    <div class="d-flex gap-2 flex-wrap mb-3">
+      {% for key, label, count in counts %}
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('settings.data_management', type=key) }}">{{ label }} ({{ count }})</a>
+      {% endfor %}
+    </div>
+    <h3 class="mb-2">{{ selected_label }}</h3>
+    {% if records.items %}
+    <div style="overflow-x:auto">
+      <table class="table">
+        <thead><tr><th>Record</th><th>ID</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for record in records.items %}
+          <tr>
+            <td>{{ record_label(record_type, record) }}</td>
+            <td>{{ record.id }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('settings.delete_record', record_type=record_type, record_id=record.id) }}" onsubmit="return window.prompt('Type DELETE to permanently remove this record.') === 'DELETE'">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">There are no {{ selected_label|lower }} records.</p>
+    {% endif %}
+    {% if records.pages > 1 %}
+    <div class="d-flex gap-2 mt-3">
+      {% if records.has_prev %}<a class="btn btn-secondary btn-sm" href="{{ url_for('settings.data_management', type=record_type, page=records.prev_num) }}">Previous</a>{% endif %}
+      <span class="text-muted">Page {{ records.page }} of {{ records.pages }}</span>
+      {% if records.has_next %}<a class="btn btn-secondary btn-sm" href="{{ url_for('settings.data_management', type=record_type, page=records.next_num) }}">Next</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="border:1px solid #dc2626">
+  <div class="card-header"><span class="card-title text-danger"><i class="fas fa-exclamation-triangle"></i> Fresh Start — Clear All Data</span></div>
+  <div class="card-body">
+    <p>This permanently deletes all sales, purchases, expenses, inventory and stock history, products, customers, suppliers, categories, accounts, audit history, and login history. <strong>All user accounts are retained</strong>, so existing users can still sign in. The system will not recreate default categories or accounts after the reset.</p>
+    <form method="POST" action="{{ url_for('settings.reset_all_data') }}" onsubmit="return confirm('This permanently deletes all business data and history. Continue?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-2">
+        <label for="confirmation" class="form-label">Type <strong>CLEAR ALL DATA</strong> to confirm</label>
+        <input id="confirmation" name="confirmation" class="form-control" required autocomplete="off">
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Your current password</label>
+        <input id="password" name="password" type="password" class="form-control" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-danger"><i class="fas fa-bomb"></i> Clear all business data</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

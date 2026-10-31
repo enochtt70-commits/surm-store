@@ -69,7 +69,8 @@ def _seed(production=False):
     from app.models.user import User
     from app.models.product import Category
     from app.models.accounting import Account
-    if not User.query.first():
+    is_new_install = not User.query.first()
+    if is_new_install:
         if production:
             username = os.environ.get("INITIAL_ADMIN_USERNAME")
             email = os.environ.get("INITIAL_ADMIN_EMAIL")
@@ -96,12 +97,11 @@ def _seed(production=False):
             u = User(username=uname,email=email,full_name=fname,role=role)
             u.set_password(pwd)
             db.session.add(u)
-    if not Category.query.first():
+    if is_new_install:
         for c in ["Pipes","PVC Fittings","Valves","Water Closets (WC)","Wash Basins",
                   "Pumps","Water Tanks","Taps","Adhesives","Hardware","Accessories",
                   "T & G","Glues","Silicone","Bends","Stop Cocks","Other Plumbing Materials"]:
             db.session.add(Category(name=c))
-    if not Account.query.first():
         for name,atype,num in [
             ("Cash in Till","asset","1001"),("Mobile Money (MoMo)","asset","1002"),
             ("Accounts Receivable","asset","1010"),("Inventory Asset","asset","1020"),
