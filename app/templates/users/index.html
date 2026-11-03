@@ -69,7 +69,7 @@
               {% endif %}
 
               <!-- Delete (Super Admin only, cannot delete self or another super admin) -->
-              {% if current_user.is_super_admin and u.id != current_user.id and u.role != 'super_admin' %}
+              {% if current_user.role == 'super_admin' and u.id != current_user.id and u.role != 'super_admin' %}
               <form method="POST" action="{{ url_for('users.delete', user_id=u.id) }}"
                     style="display:inline"
                     onsubmit="return confirm('Permanently delete {{ u.full_name }}?\n\nThis cannot be undone.\n\nNote: users with sales records will be deactivated instead.')">
