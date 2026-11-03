@@ -5,30 +5,99 @@
 <div class="card">
   <div class="card-header">
     <span class="card-title"><i class="fas fa-user-cog"></i> System Users</span>
-    <a href="{{ url_for('users.new') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add User</a>
+    <a href="{{ url_for('users.new') }}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus"></i> Add User
+    </a>
   </div>
   <div class="table-responsive">
-    <table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>
-      {% for u in users %}
-      <tr>
-        <td class="fw-600">{{ u.full_name }}</td>
-        <td class="text-muted">{{ u.username }}</td>
-        <td class="text-muted">{{ u.email }}</td>
-        <td><span class="badge badge-{{ 'danger' if u.role=='super_admin' else ('primary' if u.role=='owner' else ('info' if u.role=='manager' else 'secondary')) }}">{{ u.role_display }}</span></td>
-        <td class="text-muted fs-sm">{{ u.last_login.strftime('%d/%m/%Y %H:%M') if u.last_login else 'Never' }}</td>
-        <td><span class="badge badge-{{ 'success' if u.is_active else 'danger' }}">{{ 'Active' if u.is_active else 'Inactive' }}</span></td>
-        <td>
-          <div class="d-flex gap-1">
-            <a href="{{ url_for('users.edit',user_id=u.id) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i></a>
-            {% if u.id != current_user.id %}
-            <form method="POST" action="{{ url_for('users.toggle',user_id=u.id) }}" style="display:inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-{{ 'warning' if u.is_active else 'success' }} btn-sm">{{ 'Deactivate' if u.is_active else 'Activate' }}</button>
-            </form>{% endif %}
-          </div>
-        </td>
-      </tr>{% endfor %}
-    </tbody></table>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Last Login</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td class="fw-600">{{ u.full_name }}</td>
+          <td class="text-muted">{{ u.username }}</td>
+          <td class="text-muted">{{ u.email }}</td>
+          <td>
+            <span class="badge badge-{{
+              'danger'    if u.role == 'super_admin' else
+              'primary'   if u.role == 'owner' else
+              'info'      if u.role == 'manager' else
+              'warning'   if u.role == 'accountant' else
+              'secondary'
+            }}">{{ u.role_display }}</span>
+          </td>
+          <td class="text-muted fs-sm">
+            {{ u.last_login.strftime('%d/%m/%Y %H:%M') if u.last_login else 'Never' }}
+          </td>
+          <td>
+            <span class="badge badge-{{ 'success' if u.is_active else 'danger' }}">
+              {{ 'Active' if u.is_active else 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+
+              <!-- Edit -->
+              <a href="{{ url_for('users.edit', user_id=u.id) }}"
+                 class="btn btn-secondary btn-sm" title="Edit user">
+                <i class="fas fa-edit"></i>
+              </a>
+
+              <!-- Activate / Deactivate (admins, not self) -->
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('users.toggle', user_id=u.id) }}"
+                    style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-{{ 'warning' if u.is_active else 'success' }} btn-sm"
+                        title="{{ 'Deactivate' if u.is_active else 'Activate' }} account">
+                  <i class="fas fa-{{ 'ban' if u.is_active else 'check-circle' }}"></i>
+                  {{ 'Deactivate' if u.is_active else 'Activate' }}
+                </button>
+              </form>
+              {% endif %}
+
+              <!-- Delete (Super Admin only, cannot delete self or another super admin) -->
+              {% if current_user.is_super_admin and u.id != current_user.id and u.role != 'super_admin' %}
+              <form method="POST" action="{{ url_for('users.delete', user_id=u.id) }}"
+                    style="display:inline"
+                    onsubmit="return confirm('Permanently delete {{ u.full_name }}?\n\nThis cannot be undone.\n\nNote: users with sales records will be deactivated instead.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete user permanently">
+                  <i class="fas fa-trash-alt"></i> Delete
+                </button>
+              </form>
+              {% endif %}
+
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-</div>{% endblock %}
+</div>
+
+<!-- Legend -->
+{% if current_user.is_super_admin %}
+<div class="alert alert-info mt-3" style="font-size:.82rem">
+  <i class="fas fa-info-circle"></i>
+  <strong>Delete rules:</strong>
+  Only the Super Administrator can delete users.
+  Users with existing sales records cannot be deleted (to preserve the audit trail) — use
+  <strong>Deactivate</strong> instead.
+  You cannot delete your own account or another Super Administrator.
+</div>
+{% endif %}
+{% endblock %}

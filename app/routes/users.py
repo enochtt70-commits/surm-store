@@ -80,6 +80,43 @@ def toggle(user_id):
     return redirect(url_for('users.index'))
 
 
+
+@users_bp.route('/<int:user_id>/delete', methods=['POST'])
+@login_required
+def delete(user_id):
+    """Only Super Admin can permanently delete a user."""
+    if not current_user.is_super_admin:
+        flash('Only the Super Administrator can delete users.', 'danger')
+        return redirect(url_for('users.index'))
+    u = db.get_or_404(User, user_id)
+    if u.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('users.index'))
+    if u.role == 'super_admin':
+        flash('Cannot delete another Super Administrator.', 'danger')
+        return redirect(url_for('users.index'))
+    # Safety: check if user has sales (keep audit trail intact)
+    from app.models.sale import Sale
+    sale_count = Sale.query.filter_by(user_id=u.id).count()
+    if sale_count > 0:
+        # Soft approach: deactivate instead of hard delete to preserve audit trail
+        flash(
+            f'Cannot permanently delete {u.full_name} — they have {sale_count} sale(s) on record. '
+            f'Use Deactivate to disable the account instead.',
+            'warning'
+        )
+        return redirect(url_for('users.index'))
+    username = u.full_name
+    # Clean up their login history and audit logs first
+    LoginHistory.query.filter_by(user_id=u.id).delete()
+    AuditLog.query.filter_by(user_id=u.id).delete()
+    db.session.delete(u)
+    from app.utils.audit import log_action
+    log_action('delete_user', 'users', description=f'Deleted user: {username}')
+    db.session.commit()
+    flash(f'User "{username}" has been permanently deleted.', 'success')
+    return redirect(url_for('users.index'))
+
 @users_bp.route('/audit-log')
 @login_required
 @admin_required
